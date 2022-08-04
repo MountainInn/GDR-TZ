@@ -9,38 +9,38 @@ public class MoveToPoints : MonoBehaviour, IResetable
     [SerializeField] Transform prefMark;
     [SerializeField] LineRenderer prefTrajectory;
 
-    Queue<TrajectoryPoint> points = new Queue<TrajectoryPoint>();
-    Vector3 lastPointPosition;
+    Queue<Waypoint> waypoints = new Queue<Waypoint>();
+    Vector3 lastWaypointPosition;
     bool isMoving = true;
 
     void LateUpdate()
     {
-        MoveToNextPoint();
+        MoveToNextWaypoint();
 
-        AddNextPoint();
+        AddNextWaypoint();
     }
 
-    void MoveToNextPoint()
+    void MoveToNextWaypoint()
     {
-        if (isMoving && points.Count > 0)
+        if (isMoving && waypoints.Count > 0)
         {
-            TrajectoryPoint nextPoint = points.Peek();
+            Waypoint nextWaypoint = waypoints.Peek();
 
-            Vector3 nextPosition = nextPoint.position;
+            Vector3 nextPosition = nextWaypoint.position;
 
             Vector3 direction = (nextPosition - transform.position).normalized;
             transform.Translate(direction * movementSpeed * Time.fixedDeltaTime);
 
-            nextPoint.UpdateTrajectory(transform.position);
+            nextWaypoint.UpdateTrajectory(transform.position);
 
             if (Vector3.Distance(transform.position, nextPosition) < deadzone)
             {
-                points.Dequeue().DestroyUnityObjects();
+                waypoints.Dequeue().DestroyUnityObjects();
             }
         }
     }
 
-    void AddNextPoint()
+    void AddNextWaypoint()
     {
         if (!GameOverScreen.isGameOverScreenActive && Input.GetMouseButtonDown(0))
         {
@@ -48,24 +48,24 @@ public class MoveToPoints : MonoBehaviour, IResetable
             clickPosition.Scale(new Vector3(1,1,0));
 
 
-            TrajectoryPoint trajectoryPoint
-                = new TrajectoryPoint(point: Instantiate(prefMark, clickPosition, Quaternion.identity),
+            Waypoint waypoint
+                = new Waypoint(point: Instantiate(prefMark, clickPosition, Quaternion.identity),
                                       trajectory: Instantiate(prefTrajectory, clickPosition, Quaternion.identity),
-                                      previousPosition: (points.Count > 0) ? lastPointPosition : transform.position);
+                                      previousPosition: (waypoints.Count > 0) ? lastWaypointPosition : transform.position);
 
-            points.Enqueue(trajectoryPoint);
-            lastPointPosition = trajectoryPoint.position;
+            waypoints.Enqueue(waypoint);
+            lastWaypointPosition = waypoint.position;
         }
     }
 
     public void Reset()
     {
-        foreach ( var item in points )
+        foreach ( var item in waypoints )
         {
             item.DestroyUnityObjects();
         }
 
-        points = new Queue<TrajectoryPoint>();
+        waypoints = new Queue<Waypoint>();
         StartMoving();
     }
 
@@ -78,14 +78,14 @@ public class MoveToPoints : MonoBehaviour, IResetable
         isMoving = false;
     }
 
-    struct TrajectoryPoint
+    struct Waypoint
     {
         Transform point;
         LineRenderer trajectory;
 
         public Vector3 position => point.position;
 
-        public TrajectoryPoint(Transform point, LineRenderer trajectory, Vector3 previousPosition)
+        public Waypoint(Transform point, LineRenderer trajectory, Vector3 previousPosition)
         {
             this.point = point;
             this.trajectory = trajectory;
